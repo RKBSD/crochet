@@ -1,4 +1,25 @@
 #!/bin/sh
+
+if [ -z "${CROCHET_SHELL_READY}" ]; then
+    case "`uname -s 2>/dev/null`" in
+        FreeBSD)
+            CROCHET_SHELL_READY=y
+            export CROCHET_SHELL_READY
+            ;;
+        *)
+            if [ -n "${BASH_VERSION}" ]; then
+                CROCHET_SHELL_READY=y
+                export CROCHET_SHELL_READY
+            elif command -v bash >/dev/null 2>&1; then
+                exec bash "$0" "$@"
+            else
+                echo "Crochet requires bash on non-FreeBSD hosts." >&2
+                exit 1
+            fi
+            ;;
+    esac
+fi
+
 set -e
 echo 'Starting at '`date`
 
@@ -25,7 +46,9 @@ VERBOSE=0
 . ${LIBDIR}/email.sh
 . ${LIBDIR}/freebsd.sh
 . ${LIBDIR}/gpt.sh
+. ${LIBDIR}/host.sh
 . ${LIBDIR}/scm.sh
+. ${LIBDIR}/staged_image.sh
 . ${LIBDIR}/uboot.sh
 . ${LIBDIR}/firmware.sh
 . ${LIBDIR}/util.sh
@@ -142,4 +165,3 @@ disk_unmount_all
 
 email_status "${BUILDCONFIG}" "Crochet build finished"
 echo 'Finished at '`date`
-

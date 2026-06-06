@@ -6,18 +6,30 @@ TARGET=arm64
 TARGET_ARCH=aarch64
 
 IMAGE_SIZE=$((8 * 1000 * 1000 * 1000))
+BOARD_IMAGE_BACKEND=staged-makefs-mkimg
 
-SOM_RK3399_FIRMWARE_ROOT=${SOM_RK3399_FIRMWARE_ROOT:-/linux/oh-my-bsdlab/external/som-rk3399/u-boot}
+OH_MY_BSDLAB_ROOT=${OH_MY_BSDLAB_ROOT:-}
+if [ -z "${OH_MY_BSDLAB_ROOT}" ]; then
+    if [ -d /linux/oh-my-bsdlab ]; then
+        OH_MY_BSDLAB_ROOT=/linux/oh-my-bsdlab
+    elif [ -d "${HOME}/workspace/oh-my-bsdlab" ]; then
+        OH_MY_BSDLAB_ROOT=${HOME}/workspace/oh-my-bsdlab
+    fi
+fi
+
+SOM_RK3399_FIRMWARE_ROOT=${SOM_RK3399_FIRMWARE_ROOT:-${OH_MY_BSDLAB_ROOT}/external/som-rk3399/u-boot}
 SOM_RK3399_IDBLOADER=${SOM_RK3399_IDBLOADER:-${SOM_RK3399_FIRMWARE_ROOT}/idbloader.img}
 SOM_RK3399_UBOOT_ITB=${SOM_RK3399_UBOOT_ITB:-${SOM_RK3399_FIRMWARE_ROOT}/u-boot.itb}
 
 SOM_RK3399_DTB_NAME=${SOM_RK3399_DTB_NAME:-rk3399-som-rk3399.dts}
 SOM_RK3399_DTB_BASENAME=${SOM_RK3399_DTB_BASENAME:-rk3399-som-rk3399}
 SOM_RK3399_DTB_DESTDIR=${SOM_RK3399_DTB_DESTDIR:-${FREEBSD_SRC}/sys/contrib/device-tree/src/arm64/rockchip}
-SOM_RK3399_DTB_SOURCE_TREE=${SOM_RK3399_DTB_SOURCE_TREE:-/linux/oh-my-bsdlab/external/freebsd-src}
+SOM_RK3399_DTB_SOURCE_TREE=${SOM_RK3399_DTB_SOURCE_TREE:-${OH_MY_BSDLAB_ROOT}/external/freebsd-src}
 SOM_RK3399_DTB_SOURCE=${SOM_RK3399_DTB_SOURCE:-${SOM_RK3399_DTB_SOURCE_TREE}/sys/contrib/device-tree/src/arm64/rockchip/${SOM_RK3399_DTB_NAME}}
 SOM_RK3399_DTB_MAKEFILE_SOURCE=${SOM_RK3399_DTB_MAKEFILE_SOURCE:-${SOM_RK3399_DTB_SOURCE_TREE}/sys/modules/dtb/rockchip/Makefile}
 SOM_RK3399_DTB_MAKEFILE_DEST=${SOM_RK3399_DTB_MAKEFILE_DEST:-${FREEBSD_SRC}/sys/modules/dtb/rockchip/Makefile}
+SOM_RK3399_ESP_SIZE=${SOM_RK3399_ESP_SIZE:-64m}
+SOM_RK3399_ESP_OFFSET=${SOM_RK3399_ESP_OFFSET:-16m}
 
 som-rk3399_check_firmware ( ) {
     if [ ! -f "${SOM_RK3399_IDBLOADER}" ]; then
@@ -86,12 +98,10 @@ som-rk3399_install_dtb ( ) (
     local TMPDIR=${WORKDIR}/som-rk3399-dtb
     local TMPDTB=${TMPDIR}/${SOM_RK3399_DTB_BASENAME}.dtb
 
-    buildenv=`cd ${FREEBSD_SRC}; make TARGET_ARCH=$TARGET_ARCH buildenvvars`
-
     mkdir -p ${TMPDIR} || exit 1
     rm -f ${TMPDTB}
 
-    echo "${FREEBSD_SRC}/sys/tools/fdt/make_dtb.sh ${FREEBSD_SRC}/sys ${DTS_PATH} ${TMPDIR}" | (cd ${FREEBSD_SRC}; make TARGET_ARCH=$TARGET_ARCH buildenv > /dev/null)
+    echo "${FREEBSD_SRC}/sys/tools/fdt/make_dtb.sh ${FREEBSD_SRC}/sys ${DTS_PATH} ${TMPDIR}" | (cd ${FREEBSD_SRC}; ${FREEBSD_MAKE} TARGET_ARCH=$TARGET_ARCH buildenv > /dev/null)
     if [ ! -f "${TMPDTB}" ]; then
         echo "Failed to build ${SOM_RK3399_DTB_BASENAME}.dtb from:"
         echo "    ${DTS_PATH}"
@@ -101,6 +111,12 @@ som-rk3399_install_dtb ( ) (
 )
 
 som-rk3399_partition_image ( ) {
+    if [ "${BOARD_IMAGE_BACKEND}" = "staged-makefs-mkimg" ]; then
+        staged_image_register_partition FAT staged-esp
+        staged_image_register_partition UFS staged-rootfs
+        return 0
+    fi
+
     echo "Installing SOM-RK3399 firmware on ${DISK_MD}"
     dd if=${SOM_RK3399_IDBLOADER} of=/dev/${DISK_MD} conv=sync bs=512 seek=64
     dd if=${SOM_RK3399_UBOOT_ITB} of=/dev/${DISK_MD} conv=sync bs=512 seek=16384
@@ -111,6 +127,37 @@ som-rk3399_partition_image ( ) {
     disk_ufs_create
 }
 strategy_add $PHASE_PARTITION_LWW som-rk3399_partition_image
+
+som-rk3399_make_rootfs_image ( ) {
+    staged_image_merge_metalogs \
+        "${WORKDIR}/som-rk3399-rootfs.mtree" \
+        "${BOARD_ROOTFS_METALOG}" \
+        "${BOARD_STAGE_KERNEL_METALOG}"
+    staged_image_add_unlisted_tree_to_metalog "${BOARD_FREEBSD_STAGE}" "${WORKDIR}/som-rk3399-rootfs.mtree"
+    staged_image_make_rootfs "${WORKDIR}/som-rk3399-rootfs.img" "${WORKDIR}/som-rk3399-rootfs.mtree"
+}
+
+som-rk3399_make_esp_image ( ) {
+    staged_image_make_esp "${WORKDIR}/som-rk3399-esp.img" "${SOM_RK3399_ESP_SIZE}"
+}
+
+som-rk3399_compose_image ( ) {
+    if [ "${BOARD_IMAGE_BACKEND}" != "staged-makefs-mkimg" ]; then
+        return 0
+    fi
+
+    rm -f "${WORKDIR}/som-rk3399-rootfs.img" "${WORKDIR}/som-rk3399-esp.img" "${WORKDIR}/som-rk3399-rootfs.mtree"
+    som-rk3399_make_rootfs_image
+    som-rk3399_make_esp_image
+    "${MKIMG_CMD}" \
+        -s gpt \
+        -p "efi:=${WORKDIR}/som-rk3399-esp.img:${SOM_RK3399_ESP_OFFSET}" \
+        -p "freebsd-ufs:=${WORKDIR}/som-rk3399-rootfs.img:+0" \
+        -o "${IMG}"
+    dd if="${SOM_RK3399_IDBLOADER}" of="${IMG}" conv=notrunc bs=512 seek=64
+    dd if="${SOM_RK3399_UBOOT_ITB}" of="${IMG}" conv=notrunc bs=512 seek=16384
+}
+strategy_add $PHASE_POST_UNMOUNT som-rk3399_compose_image
 
 strategy_add $PHASE_BUILD_OTHER freebsd_loader_efi_build
 strategy_add $PHASE_BOOT_INSTALL mkdir -p EFI/BOOT

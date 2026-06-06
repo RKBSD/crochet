@@ -107,7 +107,14 @@ board_check_image_size_set ( ) {
 strategy_add $PHASE_CHECK board_check_image_size_set
 
 board_default_create_image ( ) {
-    disk_create_image $IMG $IMAGE_SIZE
+    case "${BOARD_IMAGE_BACKEND}" in
+        staged-makefs-mkimg)
+            staged_image_create_raw
+            ;;
+        *)
+            disk_create_image $IMG $IMAGE_SIZE
+            ;;
+    esac
 }
 strategy_add $PHASE_IMAGE_BUILD_LWW board_default_create_image
 
@@ -120,7 +127,14 @@ strategy_add $PHASE_PARTITION_LWW board_default_partition_image
 
 # Default mounts all the FreeBSD partitions
 board_default_mount_partitions ( ) {
-    board_mount_all
+    case "${BOARD_IMAGE_BACKEND}" in
+        staged-makefs-mkimg)
+            staged_image_no_mount
+            ;;
+        *)
+            board_mount_all
+            ;;
+    esac
 }
 strategy_add $PHASE_MOUNT_LWW board_default_mount_partitions
 
@@ -251,7 +265,7 @@ board_mountpoint ( ) {
 	MOUNTPOINT_PREFIX=${BOARD_BOOT_MOUNTPOINT_PREFIX}
     elif board_is_freebsd_partition ${ABSINDEX}; then
 	MOUNTPOINT_PREFIX=${BOARD_FREEBSD_MOUNTPOINT_PREFIX}
-    elif [ $TYPE == "RESERVED" ]; then
+    elif [ "$TYPE" = "RESERVED" ]; then
         MOUNTPOINT_PREFIX=/dev/null
     else
 	MOUNTPOINT_PREFIX=`eval echo \\$BOARD_${TYPE}_MOUNTPOINT_PREFIX`
@@ -305,4 +319,3 @@ board_mount_all ( ) {
 	ABSINDEX=$(( ${ABSINDEX} + 1))
     done
 }
-
