@@ -48,6 +48,32 @@ host_require_cmd ( ) {
     exit 1
 }
 
+host_first_existing_dir ( ) {
+    local CANDIDATE
+
+    for CANDIDATE in "$@"; do
+        if [ -n "${CANDIDATE}" ] && [ -d "${CANDIDATE}" ]; then
+            echo "${CANDIDATE}"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+host_first_existing_file ( ) {
+    local CANDIDATE
+
+    for CANDIDATE in "$@"; do
+        if [ -n "${CANDIDATE}" ] && [ -f "${CANDIDATE}" ]; then
+            echo "${CANDIDATE}"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 host_require_linux_cmds ( ) {
     if [ -z "${HOST_IS_LINUX}" ]; then
         return 0

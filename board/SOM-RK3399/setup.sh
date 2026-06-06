@@ -10,21 +10,41 @@ BOARD_IMAGE_BACKEND=staged-makefs-mkimg
 
 OH_MY_BSDLAB_ROOT=${OH_MY_BSDLAB_ROOT:-}
 if [ -z "${OH_MY_BSDLAB_ROOT}" ]; then
-    if [ -d /linux/oh-my-bsdlab ]; then
-        OH_MY_BSDLAB_ROOT=/linux/oh-my-bsdlab
-    elif [ -d "${HOME}/workspace/oh-my-bsdlab" ]; then
-        OH_MY_BSDLAB_ROOT=${HOME}/workspace/oh-my-bsdlab
-    fi
+    OH_MY_BSDLAB_ROOT=`host_first_existing_dir \
+        "${TOPDIR}/oh-my-bsdlab" \
+        "${TOPDIR}/../oh-my-bsdlab"` || true
 fi
 
-SOM_RK3399_FIRMWARE_ROOT=${SOM_RK3399_FIRMWARE_ROOT:-${OH_MY_BSDLAB_ROOT}/external/som-rk3399/u-boot}
+if [ -z "${SOM_RK3399_FIRMWARE_ROOT}" ]; then
+    SOM_RK3399_FIRMWARE_ROOT=`host_first_existing_dir \
+        "${OH_MY_BSDLAB_ROOT}/external/som-rk3399/u-boot" \
+        "${TOPDIR}/external/som-rk3399/u-boot" \
+        "${TOPDIR}/../external/som-rk3399/u-boot" \
+        "${TOPDIR}/som-rk3399/u-boot" \
+        "${TOPDIR}/../som-rk3399/u-boot" \
+        "${TOPDIR}/u-boot" \
+        "${TOPDIR}/../u-boot" \
+        "/usr/local/share/u-boot/som-rk3399" \
+        "/usr/local/share/u-boot/u-boot-som-rk3399"` || true
+fi
+
 SOM_RK3399_IDBLOADER=${SOM_RK3399_IDBLOADER:-${SOM_RK3399_FIRMWARE_ROOT}/idbloader.img}
 SOM_RK3399_UBOOT_ITB=${SOM_RK3399_UBOOT_ITB:-${SOM_RK3399_FIRMWARE_ROOT}/u-boot.itb}
 
 SOM_RK3399_DTB_NAME=${SOM_RK3399_DTB_NAME:-rk3399-som-rk3399.dts}
 SOM_RK3399_DTB_BASENAME=${SOM_RK3399_DTB_BASENAME:-rk3399-som-rk3399}
 SOM_RK3399_DTB_DESTDIR=${SOM_RK3399_DTB_DESTDIR:-${FREEBSD_SRC}/sys/contrib/device-tree/src/arm64/rockchip}
-SOM_RK3399_DTB_SOURCE_TREE=${SOM_RK3399_DTB_SOURCE_TREE:-${OH_MY_BSDLAB_ROOT}/external/freebsd-src}
+if [ -z "${SOM_RK3399_DTB_SOURCE_TREE}" ]; then
+    SOM_RK3399_DTB_SOURCE_TREE=`host_first_existing_dir \
+        "${OH_MY_BSDLAB_ROOT}/external/freebsd-src" \
+        "${TOPDIR}/external/freebsd-src" \
+        "${TOPDIR}/../external/freebsd-src" \
+        "${TOPDIR}/freebsd-src" \
+        "${TOPDIR}/../freebsd-src" \
+        "${FREEBSD_SRC}" \
+        "/usr/src"` || true
+fi
+
 SOM_RK3399_DTB_SOURCE=${SOM_RK3399_DTB_SOURCE:-${SOM_RK3399_DTB_SOURCE_TREE}/sys/contrib/device-tree/src/arm64/rockchip/${SOM_RK3399_DTB_NAME}}
 SOM_RK3399_DTB_MAKEFILE_SOURCE=${SOM_RK3399_DTB_MAKEFILE_SOURCE:-${SOM_RK3399_DTB_SOURCE_TREE}/sys/modules/dtb/rockchip/Makefile}
 SOM_RK3399_DTB_MAKEFILE_DEST=${SOM_RK3399_DTB_MAKEFILE_DEST:-${FREEBSD_SRC}/sys/modules/dtb/rockchip/Makefile}
@@ -36,16 +56,16 @@ som-rk3399_check_firmware ( ) {
         echo "Missing SOM-RK3399 firmware file:"
         echo "    ${SOM_RK3399_IDBLOADER}"
         echo
-        echo "Build or point SOM_RK3399_IDBLOADER at the idbloader.img produced by"
-        echo "/linux/oh-my-bsdlab for the SOM-RK3399 board."
+        echo "Set SOM_RK3399_IDBLOADER or SOM_RK3399_FIRMWARE_ROOT to a directory"
+        echo "containing the board's idbloader.img."
         exit 1
     fi
     if [ ! -f "${SOM_RK3399_UBOOT_ITB}" ]; then
         echo "Missing SOM-RK3399 firmware file:"
         echo "    ${SOM_RK3399_UBOOT_ITB}"
         echo
-        echo "Build or point SOM_RK3399_UBOOT_ITB at the u-boot.itb produced by"
-        echo "/linux/oh-my-bsdlab for the SOM-RK3399 board."
+        echo "Set SOM_RK3399_UBOOT_ITB or SOM_RK3399_FIRMWARE_ROOT to a directory"
+        echo "containing the board's u-boot.itb."
         exit 1
     fi
     echo "Found SOM-RK3399 firmware in:"
@@ -63,8 +83,8 @@ som-rk3399_ensure_dts ( ) {
             echo "    ${DEST_DTS}"
             echo "    ${SOM_RK3399_DTB_SOURCE}"
             echo
-            echo "Populate /usr/src with rk3399-som-rk3399 DTS, or provide"
-            echo "SOM_RK3399_DTB_SOURCE pointing to an alternate FreeBSD source tree."
+            echo "Populate ${FREEBSD_SRC} with rk3399-som-rk3399 DTS, or provide"
+            echo "SOM_RK3399_DTB_SOURCE or SOM_RK3399_DTB_SOURCE_TREE."
             exit 1
         fi
 

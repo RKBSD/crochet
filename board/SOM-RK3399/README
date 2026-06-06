@@ -34,17 +34,27 @@ rk3399-som-rk3399.dtb from the eMMC ESP and then execute bootefi.
 Prerequisites
 -------------
 
-1. /usr/src must contain:
+1. The FreeBSD source tree selected by `FREEBSD_SRC` must contain:
    * sys/arm64/conf/SOM_RK3399
    * sys/contrib/device-tree/src/arm64/rockchip/rk3399-som-rk3399.dts
    * a Rockchip DTB module Makefile that lists rk3399-som-rk3399.dts
 
-2. If /usr/src is missing the DTS, Crochet will migrate it from:
-   /linux/oh-my-bsdlab/external/freebsd-src
+2. If `FREEBSD_SRC` is missing the DTS, Crochet will try to migrate it from
+   the first matching source tree in:
+   * `SOM_RK3399_DTB_SOURCE_TREE`, if set
+   * `OH_MY_BSDLAB_ROOT/external/freebsd-src`, if set
+   * `./external/freebsd-src` or `../external/freebsd-src`
+   * `./freebsd-src` or `../freebsd-src`
+   * `/usr/src`
 
 3. The Rockchip firmware artifacts must exist. By default Crochet looks for:
-   * /linux/oh-my-bsdlab/external/som-rk3399/u-boot/idbloader.img
-   * /linux/oh-my-bsdlab/external/som-rk3399/u-boot/u-boot.itb
+   * `SOM_RK3399_FIRMWARE_ROOT`, if set
+   * `OH_MY_BSDLAB_ROOT/external/som-rk3399/u-boot`, if set
+   * `./external/som-rk3399/u-boot` or `../external/som-rk3399/u-boot`
+   * `./som-rk3399/u-boot` or `../som-rk3399/u-boot`
+   * `./u-boot` or `../u-boot`
+   * `/usr/local/share/u-boot/som-rk3399`
+   * `/usr/local/share/u-boot/u-boot-som-rk3399`
 
 You can override those paths with:
    * SOM_RK3399_FIRMWARE_ROOT
@@ -62,7 +72,7 @@ Create a config file whose first line is:
 
 Then run:
 
-    sudo /bin/sh crochet.sh -c <config file>
+    sudo ./crochet.sh -c <config file>
 
 The result is a FreeBSD system image for eMMC. Write the firmware to SD
 using your existing SOM-RK3399 U-Boot workflow, then write the Crochet
