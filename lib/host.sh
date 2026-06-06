@@ -49,11 +49,9 @@ host_require_cmd ( ) {
 }
 
 host_first_existing_dir ( ) {
-    local CANDIDATE
-
-    for CANDIDATE in "$@"; do
-        if [ -n "${CANDIDATE}" ] && [ -d "${CANDIDATE}" ]; then
-            echo "${CANDIDATE}"
+    for HOST_CANDIDATE in "$@"; do
+        if [ -n "${HOST_CANDIDATE}" ] && [ -d "${HOST_CANDIDATE}" ]; then
+            echo "${HOST_CANDIDATE}"
             return 0
         fi
     done
@@ -62,11 +60,9 @@ host_first_existing_dir ( ) {
 }
 
 host_first_existing_file ( ) {
-    local CANDIDATE
-
-    for CANDIDATE in "$@"; do
-        if [ -n "${CANDIDATE}" ] && [ -f "${CANDIDATE}" ]; then
-            echo "${CANDIDATE}"
+    for HOST_CANDIDATE in "$@"; do
+        if [ -n "${HOST_CANDIDATE}" ] && [ -f "${HOST_CANDIDATE}" ]; then
+            echo "${HOST_CANDIDATE}"
             return 0
         fi
     done
@@ -93,26 +89,23 @@ host_freebsd_buildenv ( ) {
 }
 
 host_find_bootstrap_tool ( ) {
-    local TOOL=$1
-    local BUILDENV
-    local CANDIDATE
-    local TOOLPATH
+    HOST_TOOL=$1
 
-    BUILDENV=`host_freebsd_buildenvvars`
-    TOOLPATH=`eval "${BUILDENV} env | awk -F= '/^PATH=/{print substr(\$0,6)}'"`
-    CANDIDATE=`printf '%s\n' ${TOOLPATH} | tr ':' '\n' | while read P; do
-        if [ -x "${P}/${TOOL}" ]; then
-            echo "${P}/${TOOL}"
+    HOST_BUILDENV=`host_freebsd_buildenvvars`
+    HOST_TOOLPATH=`eval "${HOST_BUILDENV} env" | awk -F= '/^PATH=/{print substr($0,6)}'`
+    HOST_CANDIDATE=`printf '%s\n' ${HOST_TOOLPATH} | tr ':' '\n' | while read P; do
+        if [ -x "${P}/${HOST_TOOL}" ]; then
+            echo "${P}/${HOST_TOOL}"
             break
         fi
     done`
-    if [ -n "${CANDIDATE}" ]; then
-        echo "${CANDIDATE}"
+    if [ -n "${HOST_CANDIDATE}" ]; then
+        echo "${HOST_CANDIDATE}"
         return 0
     fi
 
     if [ -d "${MAKEOBJDIRPREFIX}" ]; then
-        find "${MAKEOBJDIRPREFIX}" -path "*/${TOOL}" -perm -111 2>/dev/null | head -n 1
+        find "${MAKEOBJDIRPREFIX}" -path "*/${HOST_TOOL}" -perm -111 2>/dev/null | head -n 1
         return 0
     fi
 

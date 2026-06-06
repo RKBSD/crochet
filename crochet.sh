@@ -1,25 +1,5 @@
 #!/bin/sh
 
-if [ -z "${CROCHET_SHELL_READY}" ]; then
-    case "`uname -s 2>/dev/null`" in
-        FreeBSD)
-            CROCHET_SHELL_READY=y
-            export CROCHET_SHELL_READY
-            ;;
-        *)
-            if [ -n "${BASH_VERSION}" ]; then
-                CROCHET_SHELL_READY=y
-                export CROCHET_SHELL_READY
-            elif command -v bash >/dev/null 2>&1; then
-                exec bash "$0" "$@"
-            else
-                echo "Crochet requires bash on non-FreeBSD hosts." >&2
-                exit 1
-            fi
-            ;;
-    esac
-fi
-
 set -e
 echo 'Starting at '`date`
 

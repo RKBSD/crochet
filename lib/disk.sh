@@ -82,14 +82,13 @@ disk_prep_mountdir ( ) {
 #
 # $1: Optional type (e.g., FAT, RESERVED, UFS)
 disk_count ( ) {
-    local TYPE=$1
-    local TYPE_COUNT
+    DISK_COUNT_TYPE=$1
 
-    if [ -z "$TYPE" ]; then
+    if [ -z "$DISK_COUNT_TYPE" ]; then
 	echo ${DISK_COUNT:-0}
     else
-	TYPE_COUNT=`eval echo \\$DISK_${TYPE}_COUNT`
-	echo ${TYPE_COUNT:-0}
+	DISK_COUNT_TYPE_COUNT=`eval echo \\$DISK_${DISK_COUNT_TYPE}_COUNT`
+	echo ${DISK_COUNT_TYPE_COUNT:-0}
     fi
 }
 
@@ -101,24 +100,20 @@ disk_count ( ) {
 # disk_get_var [type] index varname
 #
 disk_get_var ( ) {
-    local TYPE
-    local ABSINDEX
-    local VARNAME
-
     if [ $# -eq 3 ]; then
-	TYPE=$1
+	DISK_GET_VAR_TYPE=$1
 	shift
     else
-	TYPE=
+	DISK_GET_VAR_TYPE=
     fi
-    ABSINDEX=$1
+    DISK_GET_VAR_ABSINDEX=$1
 
-    if [ -n "$TYPE" ]; then
-	ABSINDEX=`disk_absindex ${TYPE} ${1}`
+    if [ -n "$DISK_GET_VAR_TYPE" ]; then
+	DISK_GET_VAR_ABSINDEX=`disk_absindex ${DISK_GET_VAR_TYPE} ${1}`
     fi
-    VARNAME=$2
+    DISK_GET_VAR_VARNAME=$2
 
-    echo `eval echo \\$DISK_${ABSINDEX}_${VARNAME}`
+    echo `eval echo \\$DISK_${DISK_GET_VAR_ABSINDEX}_${DISK_GET_VAR_VARNAME}`
 }
 
 
@@ -130,26 +125,21 @@ disk_get_var ( ) {
 # disk_set_var [type] index varname value
 #
 disk_set_var ( ) {
-    local TYPE
-    local ABSINDEX
-    local VARNAME
-    local VALUE
-
     if [ $# -eq 4 ]; then
-	TYPE=$1
+	DISK_SET_VAR_TYPE=$1
 	shift
     else
-	TYPE=
+	DISK_SET_VAR_TYPE=
     fi
-    ABSINDEX=$1
+    DISK_SET_VAR_ABSINDEX=$1
 
-    if [ -n "$TYPE" ]; then
-	ABSINDEX=`disk_absindex ${TYPE} ${1}`
+    if [ -n "$DISK_SET_VAR_TYPE" ]; then
+	DISK_SET_VAR_ABSINDEX=`disk_absindex ${DISK_SET_VAR_TYPE} ${1}`
     fi
-    VARNAME=$2
-    VALUE=$3
+    DISK_SET_VAR_VARNAME=$2
+    DISK_SET_VAR_VALUE=$3
 
-    setvar DISK_${ABSINDEX}_${VARNAME} ${VALUE}
+    setvar DISK_${DISK_SET_VAR_ABSINDEX}_${DISK_SET_VAR_VARNAME} ${DISK_SET_VAR_VALUE}
 }
 
 #
@@ -158,35 +148,33 @@ disk_set_var ( ) {
 # $1: Type (e.g., FAT, RESERVED, UFS)
 # $2: Partition name (a slice or partition-of-slice name, e.g., md0s1 or md0s2a)
 disk_created_new ( ) {
-    local TYPE=$1
-    local NAME=$2
-    local ABSINDEX
-    local RELINDEX
+    DISK_CREATED_TYPE=$1
+    DISK_CREATED_NAME=$2
 
     DISK_COUNT=$(( `disk_count` + 1 ))
-    setvar DISK_${TYPE}_COUNT $(( `disk_count ${TYPE}` + 1 ))
+    setvar DISK_${DISK_CREATED_TYPE}_COUNT $(( `disk_count ${DISK_CREATED_TYPE}` + 1 ))
 
-    ABSINDEX=`disk_count`
-    RELINDEX=`disk_count ${TYPE}`
+    DISK_CREATED_ABSINDEX=`disk_count`
+    DISK_CREATED_RELINDEX=`disk_count ${DISK_CREATED_TYPE}`
 
     # The absolute index is the only value tracked by type and
     # relative index.
-    setvar DISK_${TYPE}_${RELINDEX}_ABSINDEX ${ABSINDEX}
+    setvar DISK_${DISK_CREATED_TYPE}_${DISK_CREATED_RELINDEX}_ABSINDEX ${DISK_CREATED_ABSINDEX}
 
-    disk_set_var ${ABSINDEX} TYPE      ${TYPE}
-    disk_set_var ${ABSINDEX} RELINDEX  ${RELINDEX}
-    disk_set_var ${ABSINDEX} ABSINDEX  ${ABSINDEX}
-    disk_set_var ${ABSINDEX} PARTITION ${NAME}
-    disk_set_var ${ABSINDEX} DEVICE    /dev/${NAME}
+    disk_set_var ${DISK_CREATED_ABSINDEX} TYPE      ${DISK_CREATED_TYPE}
+    disk_set_var ${DISK_CREATED_ABSINDEX} RELINDEX  ${DISK_CREATED_RELINDEX}
+    disk_set_var ${DISK_CREATED_ABSINDEX} ABSINDEX  ${DISK_CREATED_ABSINDEX}
+    disk_set_var ${DISK_CREATED_ABSINDEX} PARTITION ${DISK_CREATED_NAME}
+    disk_set_var ${DISK_CREATED_ABSINDEX} DEVICE    /dev/${DISK_CREATED_NAME}
 
     # The first FAT partition is always considered a boot partition
-    if [ \( "$TYPE" = "FAT" \) -a \( ${RELINDEX} -eq 1 \) ]; then
-	disk_set_var ${ABSINDEX} BOOT "y"
+    if [ \( "$DISK_CREATED_TYPE" = "FAT" \) -a \( ${DISK_CREATED_RELINDEX} -eq 1 \) ]; then
+	disk_set_var ${DISK_CREATED_ABSINDEX} BOOT "y"
     fi
 
     # The first UFS partition always gets FreeBSD installed
-    if [ \( "$TYPE" = "UFS" \) -a \( ${RELINDEX} -eq 1 \) ]; then
-	disk_set_var ${ABSINDEX} FREEBSD "y"
+    if [ \( "$DISK_CREATED_TYPE" = "UFS" \) -a \( ${DISK_CREATED_RELINDEX} -eq 1 \) ]; then
+	disk_set_var ${DISK_CREATED_ABSINDEX} FREEBSD "y"
     fi
 }
 
@@ -197,10 +185,10 @@ disk_created_new ( ) {
 # disk_absindex type relindex
 #
 disk_absindex ( ) {
-    local TYPE=$1
-    local RELINDEX=$2
+    DISK_ABSINDEX_TYPE=$1
+    DISK_ABSINDEX_RELINDEX=$2
 
-    echo `eval echo \\$DISK_${TYPE}_${RELINDEX}_ABSINDEX`
+    echo `eval echo \\$DISK_${DISK_ABSINDEX_TYPE}_${DISK_ABSINDEX_RELINDEX}_ABSINDEX`
 }
 
 

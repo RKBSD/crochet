@@ -178,9 +178,9 @@ strategy_add $PHASE_GOODBYE_LWW board_default_goodbye
 
 # $1: absolute index of partition
 board_is_boot_partition ( ) {
-    local ABSINDEX=$1
+    BOARD_IS_BOOT_ABSINDEX=$1
     
-    if [ "`disk_get_var ${ABSINDEX} BOOT`" = "y" ]; then
+    if [ "`disk_get_var ${BOARD_IS_BOOT_ABSINDEX} BOOT`" = "y" ]; then
 	return 0
     else
 	return 1
@@ -189,9 +189,9 @@ board_is_boot_partition ( ) {
 
 # $1: absolute index of partition
 board_is_freebsd_partition ( ) {
-    local ABSINDEX=$1
+    BOARD_IS_FREEBSD_ABSINDEX=$1
     
-    if [ "`disk_get_var ${ABSINDEX} FREEBSD`" = "y" ]; then
+    if [ "`disk_get_var ${BOARD_IS_FREEBSD_ABSINDEX} FREEBSD`" = "y" ]; then
 	return 0
     else
 	return 1
@@ -253,55 +253,50 @@ board_customize_partition ( ) {
 
 # $1: absolute index of the partition to get the mount point for
 board_mountpoint ( ) {
-    local ABSINDEX=$1
-    local TYPE
-    local RELINDEX
-    local MOUNTPOINT_PREFIX
+    BOARD_MOUNTPOINT_ABSINDEX=$1
 
-    TYPE=`disk_get_var ${ABSINDEX} TYPE`
-    RELINDEX=`disk_get_var ${ABSINDEX} RELINDEX`
+    BOARD_MOUNTPOINT_TYPE=`disk_get_var ${BOARD_MOUNTPOINT_ABSINDEX} TYPE`
+    BOARD_MOUNTPOINT_RELINDEX=`disk_get_var ${BOARD_MOUNTPOINT_ABSINDEX} RELINDEX`
 
-    if board_is_boot_partition ${ABSINDEX}; then
-	MOUNTPOINT_PREFIX=${BOARD_BOOT_MOUNTPOINT_PREFIX}
-    elif board_is_freebsd_partition ${ABSINDEX}; then
-	MOUNTPOINT_PREFIX=${BOARD_FREEBSD_MOUNTPOINT_PREFIX}
-    elif [ "$TYPE" = "RESERVED" ]; then
-        MOUNTPOINT_PREFIX=/dev/null
+    if board_is_boot_partition ${BOARD_MOUNTPOINT_ABSINDEX}; then
+	BOARD_MOUNTPOINT_PREFIX=${BOARD_BOOT_MOUNTPOINT_PREFIX}
+    elif board_is_freebsd_partition ${BOARD_MOUNTPOINT_ABSINDEX}; then
+	BOARD_MOUNTPOINT_PREFIX=${BOARD_FREEBSD_MOUNTPOINT_PREFIX}
+    elif [ "$BOARD_MOUNTPOINT_TYPE" = "RESERVED" ]; then
+        BOARD_MOUNTPOINT_PREFIX=/dev/null
     else
-	MOUNTPOINT_PREFIX=`eval echo \\$BOARD_${TYPE}_MOUNTPOINT_PREFIX`
+	BOARD_MOUNTPOINT_PREFIX=`eval echo \\$BOARD_${BOARD_MOUNTPOINT_TYPE}_MOUNTPOINT_PREFIX`
     fi
 
     # For the benefit of users who might be used to certain default
     # mountpoint names from the old single-partition-of-a-given-type
     # crochet version, the first partition of a given type has no
     # suffix.
-    if [ $RELINDEX -eq 1 ]; then
-	echo ${MOUNTPOINT_PREFIX}
+    if [ $BOARD_MOUNTPOINT_RELINDEX -eq 1 ]; then
+	echo ${BOARD_MOUNTPOINT_PREFIX}
     else
-	echo ${MOUNTPOINT_PREFIX}.${RELINDEX}
+	echo ${BOARD_MOUNTPOINT_PREFIX}.${BOARD_MOUNTPOINT_RELINDEX}
     fi
 }
 
 # $1: relative index of FAT partition to get the mount point for, 1 if
 #     not specified
 board_fat_mountpoint ( ) {
-    local RELINDEX=$1
-    local ABSINDEX
+    BOARD_FAT_MOUNTPOINT_RELINDEX=$1
     
-    ABSINDEX=`disk_get_var FAT ${RELINDEX:-1} ABSINDEX`
+    BOARD_FAT_MOUNTPOINT_ABSINDEX=`disk_get_var FAT ${BOARD_FAT_MOUNTPOINT_RELINDEX:-1} ABSINDEX`
 
-    board_mountpoint ${ABSINDEX}
+    board_mountpoint ${BOARD_FAT_MOUNTPOINT_ABSINDEX}
 }
 
 # $1: relative index of UFS partition to get the mount point for, 1 if
 #     not specified
 board_ufs_mountpoint ( ) {
-    local RELINDEX=$1
-    local ABSINDEX
+    BOARD_UFS_MOUNTPOINT_RELINDEX=$1
     
-    ABSINDEX=`disk_get_var UFS ${RELINDEX:-1} ABSINDEX`
+    BOARD_UFS_MOUNTPOINT_ABSINDEX=`disk_get_var UFS ${BOARD_UFS_MOUNTPOINT_RELINDEX:-1} ABSINDEX`
 
-    board_mountpoint ${ABSINDEX}
+    board_mountpoint ${BOARD_UFS_MOUNTPOINT_ABSINDEX}
 }
 
 

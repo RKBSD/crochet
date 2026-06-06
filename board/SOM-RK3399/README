@@ -1,5 +1,5 @@
-FriendlyElec SOM-RK3399 support targets the board's standard lab layout:
-SD card firmware plus a full FreeBSD system image written to eMMC.
+FriendlyElec SOM-RK3399 support builds a bootable FreeBSD disk image
+for SD cards or eMMC.
 
 ============================================================
 
@@ -15,19 +15,18 @@ FreeBSD booted by U-Boot via EFI.
 Boot model
 ----------
 
-This board does not build a single self-contained SD system image.
-Instead:
+This board builds a single disk image containing:
 
-1. The SD card carries Rockchip firmware only:
+1. Rockchip firmware at the offsets expected by the RK3399 boot ROM:
    * idbloader.img at sector 64
    * u-boot.itb at sector 16384
 
-2. The Crochet output image is the FreeBSD eMMC system image:
+2. A GPT partition layout with:
    * FAT ESP containing BOOTAA64.EFI and rk3399-som-rk3399.dtb
    * UFS root partition containing the kernel and world
 
 U-Boot is expected to load BOOTAA64.EFI and
-rk3399-som-rk3399.dtb from the eMMC ESP and then execute bootefi.
+rk3399-som-rk3399.dtb from the ESP and then execute bootefi.
 
 ============================================================
 
@@ -42,24 +41,41 @@ Prerequisites
 2. If `FREEBSD_SRC` is missing the DTS, Crochet will try to migrate it from
    the first matching source tree in:
    * `SOM_RK3399_DTB_SOURCE_TREE`, if set
-   * `OH_MY_BSDLAB_ROOT/external/freebsd-src`, if set
-   * `./external/freebsd-src` or `../external/freebsd-src`
-   * `./freebsd-src` or `../freebsd-src`
+   * `./external/freebsd-src`
+   * `./freebsd-src`
    * `/usr/src`
 
 3. The Rockchip firmware artifacts must exist. By default Crochet looks for:
    * `SOM_RK3399_FIRMWARE_ROOT`, if set
-   * `OH_MY_BSDLAB_ROOT/external/som-rk3399/u-boot`, if set
-   * `./external/som-rk3399/u-boot` or `../external/som-rk3399/u-boot`
-   * `./som-rk3399/u-boot` or `../som-rk3399/u-boot`
-   * `./u-boot` or `../u-boot`
-   * `/usr/local/share/u-boot/som-rk3399`
    * `/usr/local/share/u-boot/u-boot-som-rk3399`
+   * `/usr/local/share/u-boot/som-rk3399`
+   * `/usr/share/u-boot/u-boot-som-rk3399`
+   * `/usr/share/u-boot/som-rk3399`
+   * `./external/som-rk3399/u-boot`
+   * `./external/som-rk3399/artifacts`
+   * `./som-rk3399/u-boot`
+   * `./u-boot`
 
-You can override those paths with:
-   * SOM_RK3399_FIRMWARE_ROOT
-   * SOM_RK3399_IDBLOADER
-   * SOM_RK3399_UBOOT_ITB
+The preferred FreeBSD workflow is:
+
+1. Reuse the standard `sysutils/atf-rk3399` port for BL31.
+
+2. Build and install a board-specific U-Boot port that installs:
+
+   * `idbloader.img`
+   * `u-boot.itb`
+
+You can override Crochet's firmware search with:
+   * `SOM_RK3399_FIRMWARE_ROOT`
+   * `SOM_RK3399_IDBLOADER`
+   * `SOM_RK3399_UBOOT_ITB`
+
+SOM-RK3399 defaults to conservative FreeBSD build parallelism:
+   * `WORLDJOBS=2`
+   * `KERNJOBS=2`
+
+Set either variable in your config file or environment if your build host
+has enough memory for more parallel compiler jobs.
 
 ============================================================
 
@@ -74,6 +90,5 @@ Then run:
 
     sudo ./crochet.sh -c <config file>
 
-The result is a FreeBSD system image for eMMC. Write the firmware to SD
-using your existing SOM-RK3399 U-Boot workflow, then write the Crochet
-image to eMMC.
+The result is a bootable FreeBSD disk image. Write it to an SD card or
+eMMC device with the usual image-writing tool for your host.
