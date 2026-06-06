@@ -1,0 +1,69 @@
+FriendlyElec SOM-RK3399 support targets the board's standard lab layout:
+SD card firmware plus a full FreeBSD system image written to eMMC.
+
+============================================================
+
+What is a SOM-RK3399?
+---------------------
+
+The FriendlyElec SOM-RK3399 is an RK3399 based ARM64 compute module.
+This board definition is intended for the SOM-RK3399 v2 setup with
+FreeBSD booted by U-Boot via EFI.
+
+============================================================
+
+Boot model
+----------
+
+This board does not build a single self-contained SD system image.
+Instead:
+
+1. The SD card carries Rockchip firmware only:
+   * idbloader.img at sector 64
+   * u-boot.itb at sector 16384
+
+2. The Crochet output image is the FreeBSD eMMC system image:
+   * FAT ESP containing BOOTAA64.EFI and rk3399-som-rk3399.dtb
+   * UFS root partition containing the kernel and world
+
+U-Boot is expected to load BOOTAA64.EFI and
+rk3399-som-rk3399.dtb from the eMMC ESP and then execute bootefi.
+
+============================================================
+
+Prerequisites
+-------------
+
+1. /usr/src must contain:
+   * sys/arm64/conf/SOM_RK3399
+   * sys/contrib/device-tree/src/arm64/rockchip/rk3399-som-rk3399.dts
+   * a Rockchip DTB module Makefile that lists rk3399-som-rk3399.dts
+
+2. If /usr/src is missing the DTS, Crochet will migrate it from:
+   /linux/oh-my-bsdlab/external/freebsd-src
+
+3. The Rockchip firmware artifacts must exist. By default Crochet looks for:
+   * /linux/oh-my-bsdlab/external/som-rk3399/u-boot/idbloader.img
+   * /linux/oh-my-bsdlab/external/som-rk3399/u-boot/u-boot.itb
+
+You can override those paths with:
+   * SOM_RK3399_FIRMWARE_ROOT
+   * SOM_RK3399_IDBLOADER
+   * SOM_RK3399_UBOOT_ITB
+
+============================================================
+
+How to build
+------------
+
+Create a config file whose first line is:
+
+    board_setup SOM-RK3399
+
+Then run:
+
+    sudo /bin/sh crochet.sh -c <config file>
+
+The result is a FreeBSD system image for eMMC. Write the firmware to SD
+using your existing SOM-RK3399 U-Boot workflow, then write the Crochet
+image to eMMC.

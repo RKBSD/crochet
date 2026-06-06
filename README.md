@@ -49,6 +49,7 @@ You can browse the FreeBSD port collection at https://www.freshports.org.
 * [Cubieboard](http://cubieboard.org/)
 * [OrangePi](http://www.orangepi.org)
 * [NanoPi-NEO](https://wiki.friendlyarm.com/wiki/index.php/NanoPi_NEO) and [NanoPi-NEO2](https://wiki.friendlyarm.com/wiki/index.php/NanoPi_NEO2)
+* FriendlyElec SOM-RK3399
 * [PandaBoard](http://pandaboard.org/)
 * [Pine64](https://www.pine64.org/)
 * [RaspberryPi and RaspberryPi 2](http://www.raspberrypi.org/)
@@ -359,6 +360,5 @@ system.
     }
     
     # End of file.
-
 
 
