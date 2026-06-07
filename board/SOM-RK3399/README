@@ -47,6 +47,8 @@ Prerequisites
 
 3. The Rockchip firmware artifacts must exist. By default Crochet looks for:
    * `SOM_RK3399_FIRMWARE_ROOT`, if set
+   * `/usr/ports/sysutils/u-boot-som-rk3399/work/u-boot-*`
+   * `/usr/ports/sysutils/u-boot-som-rk3399/work/stage/usr/local/share/u-boot/u-boot-som-rk3399`
    * `/usr/local/share/u-boot/u-boot-som-rk3399`
    * `/usr/local/share/u-boot/som-rk3399`
    * `/usr/share/u-boot/u-boot-som-rk3399`
@@ -69,6 +71,10 @@ You can override Crochet's firmware search with:
    * `SOM_RK3399_FIRMWARE_ROOT`
    * `SOM_RK3399_IDBLOADER`
    * `SOM_RK3399_UBOOT_ITB`
+
+If you are iterating directly in `/usr/ports`, you can point
+`SOM_RK3399_FIRMWARE_ROOT` at the U-Boot work tree after a port build and
+Crochet will consume the fresh `idbloader.img` and `u-boot.itb` there.
 
 SOM-RK3399 defaults to conservative FreeBSD build parallelism:
    * `WORLDJOBS=2`

@@ -15,6 +15,8 @@ KERNJOBS=${KERNJOBS:-2}
 
 if [ -z "${SOM_RK3399_FIRMWARE_ROOT}" ]; then
     SOM_RK3399_FIRMWARE_ROOT=`host_first_existing_dir \
+        /usr/ports/sysutils/u-boot-som-rk3399/work/u-boot-* \
+        /usr/ports/sysutils/u-boot-som-rk3399/work/stage/usr/local/share/u-boot/u-boot-som-rk3399 \
         "/usr/local/share/u-boot/u-boot-som-rk3399" \
         "/usr/local/share/u-boot/som-rk3399" \
         "/usr/share/u-boot/u-boot-som-rk3399" \
